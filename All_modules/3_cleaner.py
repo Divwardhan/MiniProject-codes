@@ -4,13 +4,13 @@
 # - Removes slash/dash technical markers, page-number-only lines, and interrupt-noise like ...(Interruptions)...
 # - Keeps English names / normal uppercase names intact.
 
+# ✅ Usage:
+# python 3_cleaner.py "input.txt" "output.txt"
+
+import sys
+import os
 import re
 from pathlib import Path
-
-# ---- CONFIG: change these paths if needed ----
-INPUT_PATH = Path("cleaned.txt")
-OUTPUT_PATH = Path("cleaned_v2.txt")
-# ---------------------------------------------
 
 # compile regexes once
 RE_PAREN_WITH_SLASH = re.compile(r'\([^)]*\/[^)]*\)', flags=re.UNICODE)   # remove ( ... / ... )
@@ -85,35 +85,53 @@ def clean_line_preserve_breaks(line: str) -> str:
 
 
 def clean_file(input_path: Path, output_path: Path):
-    with input_path.open('r', encoding='utf-8') as inf:
-        lines = inf.readlines()  # preserves line count and newline characters
+    try:
+        # Check input file
+        if not input_path.exists():
+            print(f"❌ Error: Input file not found: {input_path}")
+            return
+        
+        print(f"🔄 Reading file: {input_path}")
+        with input_path.open('r', encoding='utf-8') as inf:
+            lines = inf.readlines()  # preserves line count and newline characters
 
-    out_lines = []
-    for raw in lines:
-        # raw includes trailing '\n' except possibly last line; remove it for processing but remember newline
-        has_nl = raw.endswith('\n')
-        line_body = raw[:-1] if has_nl else raw
+        print(f"🧹 Cleaning {len(lines)} lines...")
+        out_lines = []
+        for raw in lines:
+            # raw includes trailing '\n' except possibly last line; remove it for processing but remember newline
+            has_nl = raw.endswith('\n')
+            line_body = raw[:-1] if has_nl else raw
 
-        # preserve exact number of lines: if a page-number-only line, output a blank line (i.e. '\n')
-        if RE_PAGE_NUMBER.match(line_body):
-            out_lines.append('\n')
-            continue
+            # preserve exact number of lines: if a page-number-only line, output a blank line (i.e. '\n')
+            if RE_PAGE_NUMBER.match(line_body):
+                out_lines.append('\n')
+                continue
 
-        cleaned = clean_line_preserve_breaks(line_body)
+            cleaned = clean_line_preserve_breaks(line_body)
 
-        # if cleaned is empty, write a blank line so line count stays same
-        if cleaned == '':
-            out_lines.append('\n')
-        else:
-            out_lines.append(cleaned + ('\n' if has_nl else ''))
+            # if cleaned is empty, write a blank line so line count stays same
+            if cleaned == '':
+                out_lines.append('\n')
+            else:
+                out_lines.append(cleaned + ('\n' if has_nl else ''))
 
-    # write output
-    with output_path.open('w', encoding='utf-8') as outf:
-        outf.writelines(out_lines)
+        # write output
+        print(f"💾 Saving cleaned file...")
+        with output_path.open('w', encoding='utf-8') as outf:
+            outf.writelines(out_lines)
 
-    print("✅ Done. Cleaned file saved to:", output_path)
+        print(f"✅ Done! Cleaned file saved to:\n{output_path}")
+
+    except Exception as e:
+        print(f"❌ Error during cleaning: {e}")
 
 
 if __name__ == "__main__":
-    # run
-    clean_file(INPUT_PATH, OUTPUT_PATH)
+    if len(sys.argv) != 3:
+        print("⚠️ Usage: python 3_cleaner.py <input_txt_path> <output_txt_path>")
+        sys.exit(1)
+    
+    input_file = Path(sys.argv[1])
+    output_file = Path(sys.argv[2])
+    
+    clean_file(input_file, output_file)
