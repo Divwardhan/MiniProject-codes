@@ -59,10 +59,9 @@ def extract_speaker_clean_v2(text):
     """
     Extract speaker and clean speech text with proper colon handling.
     """
-    
     # Replace all | with I
     text = text.replace("|", "I")
-    
+
     # Normalize Unicode and remove leading dots/spaces
     text = unicodedata.normalize("NFKC", text).strip()
     text = re.sub(r"^\.+", "", text)
